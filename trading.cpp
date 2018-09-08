@@ -1,9 +1,20 @@
 #include "trading.h"
 #include <boost/log/trivial.hpp>
 
-#define IB_HOST         "127.0.0.1"
-#define IB_PORT         4002
-#define IB_CLIENT_ID    1
+const char *IB_HOST = "127.0.0.1";
+const int IB_PORT = 4002;
+const int IB_CLIENT_ID = 1;
+
+const int MAX_TIME_BETWEEN_RECONNECTS = 10; // seconds
+const int TIME_BETWEEN_PINGS = 30; // seconds
+const int PING_DEADLINE = 3; // seconds
+const int CONNECT_DEADLINE = 10; // seconds
+
+const int TIME_BETWEEN_WRITE_CHECK = 100; // milliseconds
+
+const char	*IB_DEFAULT_TICK_TYPES = "100,101,104,105,106,107,165,221,225,233,258,293,294,295,318";
+
+using boost::asio::ip::tcp;
 
 Trading::Trading(): EClientSocket(this, nullptr)
     , _work(_io_service)
@@ -26,13 +37,21 @@ Trading::Trading(): EClientSocket(this, nullptr)
 
 void Trading::run()
 {
+	startReceiving();
+
     // https://stackoverflow.com/questions/17156541/why-do-we-need-to-use-boostasioio-servicework
 	_io_service.run();
 }
 
+void Trading::stop()
+{
+	stopReceiving();
+	_io_service.stop();
+}
+
 void Trading::startReceiving()
 {
-    	if (!_receiving)
+    if (!_receiving)
 	{
 		_receiving = true;
 

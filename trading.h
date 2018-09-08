@@ -13,9 +13,11 @@
 
 class Trading : public EClientSocket, public DefaultEWrapper
 {
+public:
     Trading();
 
     void run();
+	void stop();
 	void startReceiving();
 	void stopReceiving();
     void reconnectHandler(const boost::system::error_code& error);
@@ -105,4 +107,5 @@ private:
 	int _time_between_reconnects;
 	bool _has_error;
 	bool _receiving;
-}
+};
+
