@@ -15,11 +15,11 @@ Trading::Trading(): EClientSocket(this, nullptr)
     , _ping_deadline(_io_service)
     , _rate_timer(_io_service)
     , _has_error(false)
-    , _rate_limiter(45, 1000)
-    // Max 45 messaggi al secondo per non farsi bloccare da IB
+    , _rate_limiter(45, 1000) // Max 45 messages per second to avoid being blocked by IB
     , _priority_message(false)
 	, _connection_state(CLIENT_CS_DISCONNECTED)
     , _time_between_reconnects(0)
+	, _receiving(false)
 {
 
 }
@@ -250,7 +250,7 @@ void Trading::writeStart()
 #ifdef QT_CORE_LIB
 			Q_EMIT sigConnectionStatus(TraderManager::RATE_LIMITER);
 #endif
-			// Avvia il timer di attesa del rate limiter
+			// Start timer waiting for rate limiter
 			_wait_for_rate_limiter = true;
 			_rate_timer.expires_from_now(boost::posix_time::milliseconds(wait_milliseconds));
 			_rate_timer.async_wait(boost::bind(&Trading::rateHandler, this, boost::asio::placeholders::error));

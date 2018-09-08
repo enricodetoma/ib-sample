@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef TWSAPIDLLEXP
+#define TWSAPIDLLEXP
+#endif
 #include <EClientSocket.h>
 #include <DefaultEWrapper.h>
 #include <deque>
@@ -100,4 +103,6 @@ private:
 	bool _priority_message;
 	enum ClientConnState _connection_state;
 	int _time_between_reconnects;
+	bool _has_error;
+	bool _receiving;
 }

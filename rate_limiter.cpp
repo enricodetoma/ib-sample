@@ -1,5 +1,3 @@
-#include <unicode/calendar.h>
-using namespace U_ICU_NAMESPACE;
 #include <cmath>
 
 #include "rate_limiter.hpp"
@@ -9,13 +7,14 @@ RateLimiter::RateLimiter(unsigned long rate, unsigned long period_ms)
 	  , period_ms_(period_ms)
 	  // sovradimensiona la coda per non sbagliare nella valutazione della rate in caso eventuali imprecisioni nei timer
 	  , queue_(rate + 100)
+	  , time_epoch_(boost::gregorian::date(1970, 1, 1))
 {
 	assert(rate > 0);
 }
 
 long RateLimiter::add_message()
 {
-	double now = Calendar::getNow();
+	double now  = (boost::posix_time::microsec_clock::local_time() - time_epoch_).total_microseconds();
 	queue_.push_back(now);
 	// Se la coda non contiene almeno rate_ elementi, non deve aspettare nulla
 	if (queue_.size() < rate_)

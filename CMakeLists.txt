@@ -34,7 +34,7 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 add_definitions( -DBOOST_NETWORK_ENABLE_HTTPS )
 add_definitions( -DBOOST_ALL_NO_LIB )
 add_definitions( -DBOOST_LOG_DYN_LINK )
-find_package(Boost 1.58.0 REQUIRED COMPONENTS thread timer date_time)
+find_package(Boost 1.58.0 REQUIRED COMPONENTS thread timer date_time container log log_setup)
 include_directories(${Boost_INCLUDE_DIRS})
 
 file (GLOB IB_SAMPLE_SOURCE_FILES "${PROJECT_SOURCE_DIR}/*.h" "${PROJECT_SOURCE_DIR}/*.hpp" "${PROJECT_SOURCE_DIR}/*.cpp" "${PROJECT_SOURCE_DIR}/*.qrc")

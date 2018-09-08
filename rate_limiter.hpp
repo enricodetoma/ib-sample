@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/circular_buffer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 class RateLimiter
 {
@@ -14,4 +15,5 @@ private:
 	unsigned long rate_;
 	unsigned long period_ms_;
 	boost::circular_buffer<double> queue_;
+	const boost::posix_time::ptime time_epoch_;
 };
