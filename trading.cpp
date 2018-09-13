@@ -80,6 +80,42 @@ void Trading::stopReceiving()
 	eDisconnect();
 }
 
+void Trading::readStart(void)
+{
+	if (_receiving && _connection_state != CLIENT_CS_DISCONNECTED)
+	{
+		boost::asio::streambuf::mutable_buffers_type buf = _inbox.prepare(8192);
+
+		// Start an asynchronous read and call readHandler when it completes or fails
+		_socket->async_read_some(buf,
+		                         boost::bind(&Trading::readHandler,
+		                                     this,
+		                                     boost::asio::placeholders::error,
+		                                     boost::asio::placeholders::bytes_transferred));
+	}
+}
+
+void Trading::readHandler(const boost::system::error_code& error, size_t bytes_transferred)
+{
+	if (_receiving)
+	{
+		if ((!error) && (bytes_transferred > 0))
+		{
+			// Mark to buffer how much was actually read
+			_inbox.commit(bytes_transferred);
+
+			checkMessages();
+
+			// Wait for next data
+			readStart();
+		}
+		else
+		{
+			eDisconnect();
+		}
+	}
+}
+
 void Trading::reconnectHandler(const boost::system::error_code& error)
 {
 	if (error != boost::asio::error::operation_aborted && _receiving &&
