@@ -8,6 +8,7 @@
 #include <deque>
 #include <string>
 #include <memory>
+#include <vector>
 #include <boost/asio.hpp>
 #include "rate_limiter.hpp"
 
@@ -20,7 +21,6 @@ public:
 	void stop();
 	void startReceiving();
 	void stopReceiving();
-    void reconnectHandler(const boost::system::error_code& error);
 	bool isConnected() const { return _connection_state == CLIENT_CS_CONNECTED; }
 
 	bool eConnect(const char* host, unsigned int port, int clientId = 0, bool extraAuth = false);
@@ -81,6 +81,19 @@ private:
 	int processMsg(const char*& ptr, const char* endPtr);
 	int processOnePrefixedMsg(const char*& ptr, const char* endPtr);
 
+protected:
+	void setNumberOfTickers(int tickers);
+	virtual void setupTickers();
+	virtual void onMarketDataUpdated();
+
+	// One element for each ticker
+	std::vector<int> bid_size;
+	std::vector<double> bid_price;
+	std::vector<int> ask_size;
+	std::vector<double> ask_price;
+	std::vector<double> last_price;
+	std::vector<int> volume;
+
 private:
 	enum ClientConnState
 	{
@@ -101,11 +114,13 @@ private:
 	boost::asio::deadline_timer _ping_timer;
 	boost::asio::deadline_timer _ping_deadline;
 	boost::asio::deadline_timer _rate_timer;
+	OrderId m_orderId;
 	RateLimiter _rate_limiter;
 	bool _priority_message;
 	enum ClientConnState _connection_state;
 	int _time_between_reconnects;
 	bool _has_error;
 	bool _receiving;
+	bool _market_data_updated;
 };
 
