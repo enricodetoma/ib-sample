@@ -15,7 +15,7 @@
 class Trading : public EClientSocket, public DefaultEWrapper
 {
 public:
-    Trading();
+    explicit Trading(const char* ib_host, int ib_port, int ib_client_id);
 
     void run();
 	void stop();

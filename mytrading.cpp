@@ -1,8 +1,13 @@
 #include "mytrading.h"
 #include <QMetaObject>
 
+const char *IB_HOST = "127.0.0.1";
+const int IB_PORT = 4002;
+const int IB_CLIENT_ID = 1;
+
 MyTrading::MyTrading(MainDialog *dlg)
-	: _dlg(dlg)
+	: Trading(IB_HOST, IB_PORT, IB_CLIENT_ID)
+	, _dlg(dlg)
 	, time_epoch_(boost::gregorian::date(1970, 1, 1))
 	, last_time_send_gui_(0.)
 {

@@ -5,10 +5,6 @@
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
 
-const char *IB_HOST = "127.0.0.1";
-const int IB_PORT = 4002;
-const int IB_CLIENT_ID = 1;
-
 const int MAX_TIME_BETWEEN_RECONNECTS = 10; // seconds
 const int TIME_BETWEEN_PINGS = 30; // seconds
 const int PING_DEADLINE = 3; // seconds
@@ -20,7 +16,7 @@ const char	*IB_DEFAULT_TICK_TYPES = "100,101,104,105,106,107,165,221,225,233,258
 
 using boost::asio::ip::tcp;
 
-Trading::Trading(): EClientSocket(this, nullptr)
+Trading::Trading(const char* ib_host, int ib_port, int ib_client_id): EClientSocket(this, nullptr)
     , _work(_io_service)
     , _socket(new tcp::socket(_io_service))
     , _async_send_active(false)
@@ -38,7 +34,15 @@ Trading::Trading(): EClientSocket(this, nullptr)
 	, _market_data_updated(false)
 	, m_orderId(-1)
 {
+	// use local machine if no host passed in
+	if (!(ib_host && *ib_host))
+	{
+		ib_host = "127.0.0.1";
+	}
 
+	setHost(ib_host);
+	setPort(ib_port);
+	setClientId(ib_client_id);
 }
 
 void Trading::run()
@@ -119,7 +123,7 @@ void Trading::reconnectHandler(const boost::system::error_code& error)
 	if (error != boost::asio::error::operation_aborted && _receiving &&
 		(_connection_state == CLIENT_CS_DISCONNECTED || _connection_state == CLIENT_CS_WAITING_FOR_CONNECT))
 	{
-		eConnect(IB_HOST, IB_PORT, IB_CLIENT_ID);
+		eConnect(this->host().c_str(), this->port(), this->clientId());
 	}
 }
 
