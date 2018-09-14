@@ -9,8 +9,6 @@ const char *IB_HOST = "127.0.0.1";
 const int IB_PORT = 4002;
 const int IB_CLIENT_ID = 1;
 
-#define CLIENT_ID_TICKER_OFFSET	10000*clientId()
-
 const int MAX_TIME_BETWEEN_RECONNECTS = 10; // seconds
 const int TIME_BETWEEN_PINGS = 30; // seconds
 const int PING_DEADLINE = 3; // seconds
@@ -511,7 +509,7 @@ void Trading::reqInstrumentDetails()
 	// 	Instrument& instrument = instruments[i];
 	// 	if (!instrument.ib_received && !instrument.simulated_combo && (instrument.broker_mkt_data == brokerCode() ||
 	// 		instrument.broker_execute == brokerCode()))
-	// 		reqContractDetails(i + CLIENT_ID_TICKER_OFFSET, instrument.details.contract);
+	// 		reqContractDetails(i + clientIdTickerOffset, instrument.details.contract);
 	// }
 }
 
@@ -702,7 +700,7 @@ void Trading::error(int id, int errorCode, const std::string& errorString)
 
 void Trading::tickPrice(TickerId tickerId, TickType field, double price, const TickAttrib& attrib)
 {
-	tickerId -= CLIENT_ID_TICKER_OFFSET;
+	tickerId -= clientIdTickerOffset;
 	if (tickerId >= 0 && tickerId < bid_price.size())
 	{
 		switch (field)
@@ -734,7 +732,7 @@ void Trading::tickPrice(TickerId tickerId, TickType field, double price, const T
 
 void Trading::tickSize(TickerId tickerId, TickType field, int size)
 {
-	tickerId -= CLIENT_ID_TICKER_OFFSET;
+	tickerId -= clientIdTickerOffset;
 	if (tickerId >= 0 && tickerId < bid_size.size())
 	{
 		switch (field)
@@ -814,17 +812,17 @@ void Trading::restartSubscriptions()
 	// 		// Esclude gli strumenti invalidi
 	// 		if (instrument.req_mkt_data && instrument.secType != LuaEnums::INVSEC)
 	// 		{
-	// 			cancelMktData(i + CLIENT_ID_TICKER_OFFSET);
+	// 			cancelMktData(i + clientIdTickerOffset);
 	// 			if (instrument.broker_mkt_data != brokerCode())
 	// 			{
 	// 				// Se vengono richiesti dati di mercato alternativi (Sella, IWBank), e sto eseguendo su IB, da IB chiedo solo il flag shortable
 	// 				if (instrument.broker_execute == brokerCode() && instrument.secType == LuaEnums::STK)
-	// 					reqMktData(i + CLIENT_ID_TICKER_OFFSET, instrument.details.contract, "236", false, false, TagValueListSPtr());
+	// 					reqMktData(i + clientIdTickerOffset, instrument.details.contract, "236", false, false, TagValueListSPtr());
 	// 				// For stocks, ask for shortable flag
 	// 			}
 	// 			else
 	// 				// Il flag shortable e' richiesto solo se IB e' il broker di esecuzione per lo strumento
-	// 				reqMktData(i + CLIENT_ID_TICKER_OFFSET, instrument.details.contract, (std::string(IB_DEFAULT_TICK_TYPES) +
+	// 				reqMktData(i + clientIdTickerOffset, instrument.details.contract, (std::string(IB_DEFAULT_TICK_TYPES) +
 	// 					           (instrument.broker_execute == brokerCode() && instrument.secType == LuaEnums::STK ? ",236" : "")).
 	// 				           c_str(), false, false, TagValueListSPtr());
 	// 		}
@@ -833,7 +831,7 @@ void Trading::restartSubscriptions()
 	// 		//facet->format("%Y%m%d %H:%M:%S");
 	// 		//stream.imbue(std::locale(std::locale::classic(), facet));
 	// 		//stream << boost::posix_time::microsec_clock::universal_time() << " GMT";
-	// 		//reqHistoricalData(i + CLIENT_ID_TICKER_OFFSET, instrument.details.contract, stream.str(), "1 D", "30 mins", "MIDPOINT", 1, 2, TagValueListSPtr());
+	// 		//reqHistoricalData(i + clientIdTickerOffset, instrument.details.contract, stream.str(), "1 D", "30 mins", "MIDPOINT", 1, 2, TagValueListSPtr());
 	// 	}
 	// }
 
@@ -849,7 +847,7 @@ void Trading::restartSubscriptions()
 
 void Trading::contractDetails(int reqId, const ContractDetails& contractDetails)
 {
-// 	reqId -= CLIENT_ID_TICKER_OFFSET;
+// 	reqId -= clientIdTickerOffset;
 // 	boost::ptr_vector<Instrument>& instruments = getInstruments(
 // 		TraderManager::InstrumentsMarketDataPositionsKey());
 // 	if (reqId >= 0 && reqId < instruments.size())
@@ -959,4 +957,5 @@ void Trading::setNumberOfTickers(int tickers)
 	ask_price.resize(tickers);
 	last_price.resize(tickers);
 	volume.resize(tickers);
+	contract_details.resize(tickers);
 }

@@ -82,6 +82,7 @@ private:
 	int processOnePrefixedMsg(const char*& ptr, const char* endPtr);
 
 protected:
+	int clientIdTickerOffset() { return 10000*clientId(); }
 	void setNumberOfTickers(int tickers);
 	virtual void setupTickers() = 0;
 	virtual void onMarketDataUpdated() = 0;
@@ -93,6 +94,7 @@ protected:
 	std::vector<double> ask_price;
 	std::vector<double> last_price;
 	std::vector<int> volume;
+	std::vector<ContractDetails> contract_details;
 
 private:
 	enum ClientConnState
