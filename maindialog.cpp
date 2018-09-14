@@ -13,6 +13,12 @@ MainDialog::~MainDialog()
 {
 }
 
+void MainDialog::slotSetPrice(double bid_price, double ask_price)
+{
+	ui.labelBidPrice->setText(QString("%1").arg(bid_price));
+	ui.labelAskPrice->setText(QString("%1").arg(ask_price));
+}
+
 void MainDialog::slotBuy()
 {
 }

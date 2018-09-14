@@ -12,6 +12,9 @@ public:
 
 	Ui::MainDialog ui;
 
+public Q_SLOTS:
+	void slotSetPrice(double bid_price, double ask_price);
+
 protected Q_SLOTS:
 	void slotBuy();
 	void slotSell();

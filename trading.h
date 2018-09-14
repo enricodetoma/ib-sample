@@ -83,8 +83,8 @@ private:
 
 protected:
 	void setNumberOfTickers(int tickers);
-	virtual void setupTickers();
-	virtual void onMarketDataUpdated();
+	virtual void setupTickers() = 0;
+	virtual void onMarketDataUpdated() = 0;
 
 	// One element for each ticker
 	std::vector<int> bid_size;

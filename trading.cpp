@@ -960,14 +960,3 @@ void Trading::setNumberOfTickers(int tickers)
 	last_price.resize(tickers);
 	volume.resize(tickers);
 }
-
-void Trading::setupTickers()
-{
-	// Example, single ticker
-	setNumberOfTickers(1);
-}
-
-void Trading::onMarketDataUpdated()
-{
-	// Implement reaction to market data updated here or in a derived class
-}

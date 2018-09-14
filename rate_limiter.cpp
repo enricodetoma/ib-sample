@@ -14,7 +14,7 @@ RateLimiter::RateLimiter(unsigned long rate, unsigned long period_ms)
 
 long RateLimiter::add_message()
 {
-	double now  = (boost::posix_time::microsec_clock::local_time() - time_epoch_).total_microseconds();
+	double now  = (boost::posix_time::microsec_clock::local_time() - time_epoch_).total_milliseconds();
 	queue_.push_back(now);
 	// Se la coda non contiene almeno rate_ elementi, non deve aspettare nulla
 	if (queue_.size() < rate_)
