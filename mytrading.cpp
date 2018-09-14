@@ -17,6 +17,14 @@ void MyTrading::setupTickers()
 {
 	// Example, single ticker
 	setNumberOfTickers(1);
+
+	Contract contract;
+	contract.symbol = "ES";
+	contract.secType = "FUT";
+	contract.lastTradeDateOrContractMonth = "201809";
+	contract.exchange = "SMART";
+	contract.currency = "USD";
+	subscribeTicker(contract);
 }
 
 void MyTrading::onMarketDataUpdated()

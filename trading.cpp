@@ -33,6 +33,8 @@ Trading::Trading(const char* ib_host, int ib_port, int ib_client_id): EClientSoc
 	, _receiving(false)
 	, _market_data_updated(false)
 	, m_orderId(-1)
+	, contract_details_requested(0)
+	, contract_details_received(0)
 {
 	// use local machine if no host passed in
 	if (!(ib_host && *ib_host))
@@ -224,7 +226,7 @@ bool Trading::eConnectImpl(int clientId, bool extraAuth)
 
 		_time_between_reconnects = 0;
 
-		reqInstrumentDetails();
+		reqAllContractDetails();
 
 		// Avvia il timer per il ping periodico
 		_ping_timer.expires_from_now(boost::posix_time::seconds(TIME_BETWEEN_PINGS));
@@ -496,25 +498,20 @@ void Trading::waitForReconnect()
 	}
 }
 
-void Trading::reqInstrumentDetails()
+void Trading::reqAllContractDetails()
 {
-	// if (_all_instruments_valid)
-	// {
-	// 	// Resubscribe if necessary
-	// 	restartSubscriptions();
-	// 	return;
-	// }
+	if (contract_details_received == contract_details.size())
+	{
+		// Contract details were already received. Just resubscribe if necessary
+		restartSubscriptions();
+		return;
+	}
 
-	// // Load non-combo instruments only
-	// boost::ptr_vector<Instrument>& instruments = getInstruments(
-	// 	TraderManager::InstrumentsMarketDataPositionsKey());
-	// for (size_t i = 0; i < instruments.size(); i++)
-	// {
-	// 	Instrument& instrument = instruments[i];
-	// 	if (!instrument.ib_received && !instrument.simulated_combo && (instrument.broker_mkt_data == brokerCode() ||
-	// 		instrument.broker_execute == brokerCode()))
-	// 		reqContractDetails(i + clientIdTickerOffset, instrument.details.contract);
-	// }
+	for (size_t i = 0; i < contract_details.size(); i++)
+	{
+		ContractDetails& details = contract_details[i];
+		reqContractDetails(i + clientIdTickerOffset(), details.contract);
+	}
 }
 
 void Trading::pingHandler(const boost::system::error_code& error)
@@ -688,7 +685,6 @@ void Trading::error(int id, int errorCode, const std::string& errorString)
 	if (errorCode == 200)
 	{
 		_has_error = false;
-		// Lo gestisce come uno strumento ricevuto, ma non valido
 		contractDetails(id, ContractDetails());
 	}
 
@@ -704,7 +700,7 @@ void Trading::error(int id, int errorCode, const std::string& errorString)
 
 void Trading::tickPrice(TickerId tickerId, TickType field, double price, const TickAttrib& attrib)
 {
-	tickerId -= clientIdTickerOffset;
+	tickerId -= clientIdTickerOffset();
 	if (tickerId >= 0 && tickerId < bid_price.size())
 	{
 		switch (field)
@@ -736,7 +732,7 @@ void Trading::tickPrice(TickerId tickerId, TickType field, double price, const T
 
 void Trading::tickSize(TickerId tickerId, TickType field, int size)
 {
-	tickerId -= clientIdTickerOffset;
+	tickerId -= clientIdTickerOffset();
 	if (tickerId >= 0 && tickerId < bid_size.size())
 	{
 		switch (field)
@@ -772,30 +768,6 @@ void Trading::tickGeneric(TickerId tickerId, TickType tickType, double value)
 
 void Trading::openOrder(OrderId orderId, const Contract& contract, const Order& order, const OrderState& ostate)
 {
-	// if (!_all_instruments_valid)
-	// 	return;
-
-	// enum LUA_ENUMS ORDER_STATUS order_status = mapIBStatusToInternalStatus(ostate.status);
-	// // Cerco lo strumento
-	// boost::ptr_vector<Instrument>& instruments = getInstruments(
-	// 	TraderManager::InstrumentsMarketDataPositionsKey());
-	// for (auto it = instruments.begin(); it != instruments.end(); ++it)
-	// {
-	// 	if (it->details.contract.conId == contract.conId)
-	// 	{
-	// 		enum LUA_ENUMS ORDER_TYPES order_type = LuaEnums::MARKET;
-	// 		if (order.orderType == "LMT")
-	// 			order_type = LuaEnums::LIMIT;
-	// 		else if (order.orderType == "MKT")
-	// 			order_type = LuaEnums::MARKET;
-	// 		if (m_orderId <= orderId)
-	// 			m_orderId = orderId + 1;
-	// 		_order_manager->addOrChangeOrder(brokerCode(), orderId, &*it, order_status,
-	// 		                                                 order.action == ACTION_BUY ? LuaEnums::BUY : LuaEnums::SELL,
-	// 		                                                 order.totalQuantity, order_type, order.lmtPrice);
-	// 		break;
-	// 	}
-	// }
 }
 
 void Trading::updateAccountValue(const std::string& key, const std::string& val,
@@ -805,142 +777,41 @@ void Trading::updateAccountValue(const std::string& key, const std::string& val,
 
 void Trading::restartSubscriptions()
 {
-	// // Market data subscription
-	// if (!_market_replay)
-	// {
-	// 	boost::ptr_vector<Instrument>& instruments = getInstruments(
-	// 		TraderManager::InstrumentsMarketDataPositionsKey());
-	// 	for (size_t i = 0; i < instruments.size(); i++)
-	// 	{
-	// 		Instrument& instrument = instruments[i];
-	// 		// Esclude gli strumenti invalidi
-	// 		if (instrument.req_mkt_data && instrument.secType != LuaEnums::INVSEC)
-	// 		{
-	// 			cancelMktData(i + clientIdTickerOffset);
-	// 			if (instrument.broker_mkt_data != brokerCode())
-	// 			{
-	// 				// Se vengono richiesti dati di mercato alternativi (Sella, IWBank), e sto eseguendo su IB, da IB chiedo solo il flag shortable
-	// 				if (instrument.broker_execute == brokerCode() && instrument.secType == LuaEnums::STK)
-	// 					reqMktData(i + clientIdTickerOffset, instrument.details.contract, "236", false, false, TagValueListSPtr());
-	// 				// For stocks, ask for shortable flag
-	// 			}
-	// 			else
-	// 				// Il flag shortable e' richiesto solo se IB e' il broker di esecuzione per lo strumento
-	// 				reqMktData(i + clientIdTickerOffset, instrument.details.contract, (std::string(IB_DEFAULT_TICK_TYPES) +
-	// 					           (instrument.broker_execute == brokerCode() && instrument.secType == LuaEnums::STK ? ",236" : "")).
-	// 				           c_str(), false, false, TagValueListSPtr());
-	// 		}
-	// 		//std::stringstream stream;
-	// 		//boost::posix_time::time_facet* facet = new boost::posix_time::time_facet();
-	// 		//facet->format("%Y%m%d %H:%M:%S");
-	// 		//stream.imbue(std::locale(std::locale::classic(), facet));
-	// 		//stream << boost::posix_time::microsec_clock::universal_time() << " GMT";
-	// 		//reqHistoricalData(i + clientIdTickerOffset, instrument.details.contract, stream.str(), "1 D", "30 mins", "MIDPOINT", 1, 2, TagValueListSPtr());
-	// 	}
-	// }
+	// Market data subscriptions
+	for (size_t i = 0; i < contract_details.size(); i++)
+	{
+		ContractDetails& details = contract_details[i];
+		cancelMktData(i + clientIdTickerOffset());
+		reqMktData(i + clientIdTickerOffset(), details.contract, IB_DEFAULT_TICK_TYPES, false, false, TagValueListSPtr());
+	}
 
-	// // Open orders
-	// reqOpenOrders();
+	// Open orders
+	reqOpenOrders();
 
-	// // Portfolio
-	// reqPositions();
+	// Portfolio
+	reqPositions();
 
-	// // Account updates
-	// //reqAccountUpdates(true, std::string());
+	// Account updates
+	//reqAccountUpdates(true, std::string());
 }
 
 void Trading::contractDetails(int reqId, const ContractDetails& contractDetails)
 {
-// 	reqId -= clientIdTickerOffset;
-// 	boost::ptr_vector<Instrument>& instruments = getInstruments(
-// 		TraderManager::InstrumentsMarketDataPositionsKey());
-// 	if (reqId >= 0 && reqId < instruments.size())
-// 	{
-// 		Instrument& reqInstrument = instruments[reqId];
-// 		reqInstrument.details = contractDetails;
-// 		// Inserisce lo strumento nella mappa ordinata per contract id, per localizzarlo facilmente quando arrivano gli aggiornamenti di ptf
-// 		if (contractDetails.contract.conId > 0)
-// 			_instruments_by_contract_id[contractDetails.contract.conId] = &reqInstrument;
-// 		// Riporta i dati essenziali sui campi di Instrument a beneficio di Lua
-// 		copyAllocateString(reqInstrument.symbol_ib, contractDetails.contract.symbol.c_str());
-// 		if (contractDetails.contract.secType == "STK")
-// 			reqInstrument.secType = LuaEnums::STK;
-// 		else if (contractDetails.contract.secType == "OPT")
-// 			reqInstrument.secType = LuaEnums::OPT;
-// 		else if (contractDetails.contract.secType == "FUT")
-// 			reqInstrument.secType = LuaEnums::FUT;
-// 		else if (contractDetails.contract.secType == "IND")
-// 			reqInstrument.secType = LuaEnums::IND;
-// 		else if (contractDetails.contract.secType == "FOP")
-// 			reqInstrument.secType = LuaEnums::FOP;
-// 		else if (contractDetails.contract.secType == "WAR")
-// 			reqInstrument.secType = LuaEnums::WAR;
-// 		else if (contractDetails.contract.secType == "CASH")
-// 			reqInstrument.secType = LuaEnums::CASH;
-// 		else if (contractDetails.contract.secType == "FUND")
-// 			reqInstrument.secType = LuaEnums::FUND;
-// 		else if (contractDetails.contract.secType == "EFP")
-// 			reqInstrument.secType = LuaEnums::EFP;
-// 		else if (contractDetails.contract.secType == "BAG")
-// 			reqInstrument.secType = LuaEnums::BAG;
-// 		else
-// 			reqInstrument.secType = LuaEnums::INVSEC;
-// 		copyAllocateString(reqInstrument.exchange, contractDetails.contract.exchange.c_str());
-// 		copyAllocateString(reqInstrument.currency, contractDetails.contract.currency.c_str());
-// 		// Fix per bug nelle API 9.73.06: https://groups.io/g/insync/topic/7790846?p=,,,20,0,0,0::recentpostdate%2Fsticky,,,20,2,0,7790846
-// 		// Se lastTradeDateOrContractMonth contiene anche l'ora, viene tagliata via
-// 		reqInstrument.details.contract.lastTradeDateOrContractMonth = reqInstrument
-// 		                                                             .details.contract.lastTradeDateOrContractMonth.substr(
-// 			                                                             0, 8);
-// 		copyAllocateString(reqInstrument.expiry, reqInstrument.details.contract.lastTradeDateOrContractMonth.c_str());
-// 		reqInstrument.strike = contractDetails.contract.strike;
-// 		copyAllocateString(reqInstrument.right, contractDetails.contract.right.c_str());
-// 		try
-// 		{
-// 			long multiplier = boost::lexical_cast<long>(contractDetails.contract.multiplier.c_str());
-// 			if (multiplier > 0)
-// 				reqInstrument.multiplier = multiplier;
-// 		}
-// 		catch (boost::bad_lexical_cast)
-// 		{
-// 		}
-// 		reqInstrument.ib_received = true;
-// 		BOOST_LOG_TRIVIAL(debug) << "contract " << reqId << ":" << dumpContractDetails(contractDetails);
-// 		bool tmp_all_non_combo_instruments_valid = true;
-// 		bool tmp_all_instruments_valid = true;
-// 		for (auto it = instruments.begin(); it != instruments.end(); ++it)
-// 		{
-// 			if (it->broker_mkt_data == brokerCode() || it->broker_execute == brokerCode())
-// 			{
-// 				if (!it->combo)
-// 					tmp_all_non_combo_instruments_valid = tmp_all_non_combo_instruments_valid && it->ib_received;
-// 				tmp_all_instruments_valid = tmp_all_instruments_valid && it->ib_received;
-// 			}
-// 		}
-// 		_all_non_combo_instruments_valid = tmp_all_non_combo_instruments_valid;
-// 		_all_instruments_valid = tmp_all_instruments_valid;
-// 		if (_all_non_combo_instruments_valid && !_all_instruments_valid)
-// 		{
-// 			// When all non combo instruments are received, copy contract ids into combo legs
-// 			for (auto it = instruments.begin(); it != instruments.end(); ++it)
-// 			{
-// 				if (it->combo)
-// 				{
-// 					for (size_t j = 0; j < it->combo_legs.size(); j++)
-// 					{
-// 						(*it->details.contract.comboLegs)[j]->conId =
-// 							it->combo_legs[j]->details.contract.conId;
-// 					}
-// 				}
-// 			}
-// 			_all_instruments_valid = true;
-// 		}
-// 		if (_all_instruments_valid)
-// 		{
-// 			BOOST_LOG_TRIVIAL(info) << "contract details completed";
-// 			restartSubscriptions();
-// 		}
-// 	}
+	reqId -= clientIdTickerOffset();
+	if (reqId >= 0 && reqId < contract_details.size())
+	{
+		ContractDetails& details = contract_details[reqId];
+		details = contractDetails;
+		// Fix for bug in API 9.73.06: https://groups.io/g/insync/topic/7790846?p=,,,20,0,0,0::recentpostdate%2Fsticky,,,20,2,0,7790846
+		// If lastTradeDateOrContractMonth contains the hour, it gets stripped
+		details.contract.lastTradeDateOrContractMonth = details.contract.lastTradeDateOrContractMonth.substr(0, 8);
+		contract_details_received++;
+		if (contract_details_received == contract_details.size())
+		{
+			BOOST_LOG_TRIVIAL(info) << "contract details completed";
+			restartSubscriptions();
+		}
+	}
 }
 
 void Trading::position(const std::string& account, const Contract& contract, double position, double avgCost)
@@ -962,4 +833,17 @@ void Trading::setNumberOfTickers(int tickers)
 	last_price.resize(tickers);
 	volume.resize(tickers);
 	contract_details.resize(tickers);
+	contract_details_requested = 0;
+	contract_details_received = 0;
+}
+
+void Trading::subscribeTicker(const Contract &contract)
+{
+	if (contract_details_requested < contract_details.size())
+	{
+		contract_details[contract_details_requested].contract = contract;
+		contract_details_requested++;
+		if (contract_details_requested == contract_details.size())
+			reqAllContractDetails();
+	}
 }

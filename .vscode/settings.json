@@ -13,6 +13,7 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "functional": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "xlocale": "cpp"
     }
 }

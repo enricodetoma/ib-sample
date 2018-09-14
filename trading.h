@@ -74,7 +74,7 @@ private:
 	void pingDeadlineConnect(const boost::system::error_code& error);
 	void rateHandler(const boost::system::error_code& error);
 
-	void reqInstrumentDetails();
+	void reqAllContractDetails();
 	void restartSubscriptions();
 
 	int processMsgImpl(const char*& ptr, const char* endPtr);
@@ -84,6 +84,7 @@ private:
 protected:
 	int clientIdTickerOffset() { return 10000*clientId(); }
 	void setNumberOfTickers(int tickers);
+	void subscribeTicker(const Contract &contract);
 	virtual void setupTickers() = 0;
 	virtual void onMarketDataUpdated() = 0;
 
@@ -95,6 +96,8 @@ protected:
 	std::vector<double> last_price;
 	std::vector<int> volume;
 	std::vector<ContractDetails> contract_details;
+	int contract_details_requested;
+	int contract_details_received;
 
 private:
 	enum ClientConnState
