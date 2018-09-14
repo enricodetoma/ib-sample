@@ -41,9 +41,6 @@ file (GLOB IB_SAMPLE_SOURCE_FILES "${PROJECT_SOURCE_DIR}/*.h" "${PROJECT_SOURCE_
 file (GLOB IB_SAMPLE_SOURCE_FILES_TWSAPI "${PROJECT_SOURCE_DIR}/twsapi/Shared/*.h" "${PROJECT_SOURCE_DIR}/twsapi/Shared/*.cpp")
 list(APPEND IB_SAMPLE_SOURCE_FILES ${IB_SAMPLE_SOURCE_FILES_TWSAPI})
 
-add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${IB_SAMPLE_SOURCE_FILES})
+add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${IB_SAMPLE_SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} Threads::Threads Qt5::Core Qt5::Widgets)
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::WinMain)
-endif()

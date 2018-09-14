@@ -32,7 +32,7 @@ Trading::Trading(const char* ib_host, int ib_port, int ib_client_id): EClientSoc
     , _time_between_reconnects(0)
 	, _receiving(false)
 	, _market_data_updated(false)
-	, m_orderId(-1)
+	, _order_id(-1)
 	, contract_details_requested(0)
 	, contract_details_received(0)
 {
@@ -49,9 +49,9 @@ Trading::Trading(const char* ib_host, int ib_port, int ib_client_id): EClientSoc
 
 void Trading::run()
 {
-	startReceiving();
-
 	setupTickers();
+
+	startReceiving();
 
     // https://stackoverflow.com/questions/17156541/why-do-we-need-to-use-boostasioio-servicework
 	_io_service.run();
@@ -385,10 +385,10 @@ bool Trading::checkMessages()
 		const char* ptr = beginPtr;
 		const char* endPtr = ptr + _inbox.size();
 
-		// Dump su disco dei messaggi IB
-		//FILE *f = fopen("ib_dump.log", "a");
-		//fwrite(ptr, 1, _inbox.size(), f);
-		//fclose(f);
+		// Message dump to disk (for debugging purposes)
+		// FILE *f = fopen("ib_dump.log", "a");
+		// fwrite(ptr, 1, _inbox.size(), f);
+		// fclose(f);
 
 		_market_data_updated = false;
 		try
@@ -563,7 +563,7 @@ void Trading::pingDeadlineConnect(const boost::system::error_code& error)
 
 // bool Trading::sendOrder(OpenOrder& open_order)
 // {
-// 	if (m_orderId < 0 || open_order.instrument == nullptr)
+// 	if (_order_id < 0 || open_order.instrument == nullptr)
 // 		return false;
 
 // 	Order order;
@@ -585,13 +585,13 @@ void Trading::pingDeadlineConnect(const boost::system::error_code& error)
 // 	order.lmtPrice = open_order.limit_price;
 
 // 	// Assegna qui l'id e poi lo incrementa per il prossimo ordine
-// 	open_order.broker_id = m_orderId;
+// 	open_order.broker_id = _order_id;
 // 	BOOST_LOG_TRIVIAL(info) << "placing order id " << open_order.id << ", broker id " << open_order.
 // 		broker_id << ": " << order.action << " " <<
 // 		std::lround(open_order.quantity) << " " << open_order.instrument->name << " at " << open_order.limit_price;
 // 	_has_error = false;
-// 	placeOrder(m_orderId, open_order.instrument->details.contract, order);
-// 	m_orderId++;
+// 	placeOrder(_order_id, open_order.instrument->details.contract, order);
+// 	_order_id++;
 // 	return !_has_error;
 // }
 
@@ -650,7 +650,7 @@ void Trading::orderStatus(OrderId orderId, const std::string& status, double fil
 
 void Trading::nextValidId(OrderId orderId)
 {
-	m_orderId = orderId;
+	_order_id = orderId;
 }
 
 void Trading::currentTime(long time)
@@ -665,7 +665,7 @@ void Trading::error(int id, int errorCode, const std::string& errorString)
 	// Warning: Approaching max rate of 50 messages per second
 	if (id == -1 && errorCode == 0)
 	{
-		boost::format fmt = boost::format("error id=%2%, errorCode=%3%, msg=%4%") % id % errorCode %
+		boost::format fmt = boost::format("error id=%1%, errorCode=%2%, msg=%3%") % id % errorCode %
 			errorString;
 		BOOST_LOG_TRIVIAL(warning) << fmt;
 		return;
@@ -675,7 +675,7 @@ void Trading::error(int id, int errorCode, const std::string& errorString)
 	// Ignore error code 202 ("Order cancelled - Reason:") which is given when canceling orders
 	if ((id != -1 || errorCode < 2103 || errorCode > 2108) && errorCode != 300 && errorCode != 202)
 	{
-		boost::format fmt = boost::format("error id=%2%, errorCode=%3%, msg=%4%") % id % errorCode %
+		boost::format fmt = boost::format("error id=%1%, errorCode=%2%, msg=%3%") % id % errorCode %
 			errorString;
 		BOOST_LOG_TRIVIAL(error) << fmt;
 		_has_error = true;
@@ -843,7 +843,5 @@ void Trading::subscribeTicker(const Contract &contract)
 	{
 		contract_details[contract_details_requested].contract = contract;
 		contract_details_requested++;
-		if (contract_details_requested == contract_details.size())
-			reqAllContractDetails();
 	}
 }

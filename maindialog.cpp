@@ -1,7 +1,10 @@
 #include "maindialog.h"
+#include "mytrading.h"
+#include <boost/bind.hpp>
 
 MainDialog::MainDialog(QWidget* parent)
 	: QDialog(parent)
+	, trading(nullptr)
 {
 	ui.setupUi(this);
 
@@ -21,8 +24,18 @@ void MainDialog::slotSetPrice(double bid_price, double ask_price)
 
 void MainDialog::slotBuy()
 {
+	if (trading)
+	{
+		// We need to use io_service::post to dispatch the call to the worker thread
+		trading->getIoService().post(boost::bind(&MyTrading::buy, trading));
+	}
 }
 
 void MainDialog::slotSell()
 {
+	if (trading)
+	{
+		// We need to use io_service::post to dispatch the call to the worker thread
+		trading->getIoService().post(boost::bind(&MyTrading::sell, trading));
+	}
 }

@@ -2,6 +2,8 @@
 
 #include "ui_maindialog.h"
 
+class MyTrading;
+
 class MainDialog : public QDialog
 {
 Q_OBJECT
@@ -9,6 +11,8 @@ Q_OBJECT
 public:
 	MainDialog(QWidget* parent = Q_NULLPTR);
 	~MainDialog();
+
+	void setTrading(MyTrading *t) { trading = t; }
 
 	Ui::MainDialog ui;
 
@@ -18,4 +22,7 @@ public Q_SLOTS:
 protected Q_SLOTS:
 	void slotBuy();
 	void slotSell();
+
+private:
+	MyTrading *trading;
 };

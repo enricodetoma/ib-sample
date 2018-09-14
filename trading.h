@@ -5,6 +5,7 @@
 #endif
 #include <EClientSocket.h>
 #include <DefaultEWrapper.h>
+#include <Order.h>
 #include <deque>
 #include <string>
 #include <memory>
@@ -26,6 +27,9 @@ public:
 	bool eConnect(const char* host, unsigned int port, int clientId = 0, bool extraAuth = false);
 	void eDisconnect(bool resetState = true) override;
 	bool isSocketOK() const override { return _connection_state == CLIENT_CS_CONNECTED; }
+
+	boost::asio::io_service& getIoService() { return _io_service; }
+	int getNextOrderId() { return _order_id >= 0 ? _order_id++ : -1; }
 
 	// override virtual funcs from EClient
 private:
@@ -119,7 +123,7 @@ private:
 	boost::asio::deadline_timer _ping_timer;
 	boost::asio::deadline_timer _ping_deadline;
 	boost::asio::deadline_timer _rate_timer;
-	OrderId m_orderId;
+	OrderId _order_id;
 	RateLimiter _rate_limiter;
 	bool _priority_message;
 	enum ClientConnState _connection_state;

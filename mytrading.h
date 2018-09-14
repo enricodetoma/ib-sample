@@ -8,6 +8,9 @@ class MyTrading : public Trading
 public:
     MyTrading(MainDialog *dlg);
 
+	void buy();
+	void sell();
+
 protected:
 	void setupTickers() override;
 	void onMarketDataUpdated() override;
